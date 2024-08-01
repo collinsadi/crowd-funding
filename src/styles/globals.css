@@ -1,0 +1,221 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .layout-container {
+    @apply mx-auto  w-11/12 max-w-screen-2xl;
+  }
+
+  .error {
+    @apply border border-red-500;
+  }
+}
+
+html {
+  overflow: visible;
+}
+
+.ant-btn-default:not(:disabled):hover {
+  color: #fff !important;
+}
+
+.particle-connect-wallet-btn {
+  background-color: #ff6b00;
+  font-weight: 300;
+  border-radius: 6px;
+  height: 50px;
+  width: 151px;
+  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+}
+
+button {
+  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  appearance: textfield;
+}
+
+input,
+.ant-select-selector, .ant-picker {
+  outline: none !important;
+  width: 100% !important;
+  height: 38px !important;
+  background: #ffffff !important;
+  border: 1px solid #d0d5dd !important;
+  border-radius: 8px !important;
+  padding: 7px 14px;
+}
+
+.ant-upload {
+  outline: none !important;
+  width: 100% !important;
+  height: 38px !important;
+  background: #ffffff !important;
+  border: 1px solid #d0d5dd !important;
+  border-radius: 8px !important;
+  padding: 2px 1%;
+}
+
+.ant-upload-select >.ant-upload {
+  border: 1px solid transparent !important;
+}
+
+.ant-upload-select .ant-btn-default:not(:disabled):hover {
+  color: #000 !important;
+}
+
+.ant-upload-select button {
+  width: 98% !important;
+  border: 1px solid transparent !important;
+}
+
+.ant-select-selector {
+  padding: 4px 14px !important;
+}
+
+.ant-select-focused:where(.css-dev-only-do-not-override-ed5zg0).ant-select:not(
+    .ant-select-disabled
+  ):not(.ant-select-customize-input):not(.ant-pagination-size-changer)
+  .ant-select-selector {
+  box-shadow: none;
+}
+
+.ant-select:not(.ant-select-disabled):not(.ant-select-customize-input):not(
+    .ant-pagination-size-changer
+  ):hover
+  .ant-select-selector {
+  border-color: #d0d5dd;
+}
+
+.ant-select-selection-placeholder, .ant-picker-input >input::placeholder {
+  font-size: 14px !important;
+  color: #8e8e8e !important;
+  font-weight: 400;
+}
+
+.ant-picker-focused {
+  border-color: #d0d5dd;
+  box-shadow: none;
+  border-inline-end-width: 1px;
+  outline: 0;
+}
+
+.campaign-card:hover {
+  color: black;
+}
+
+.campaigns{
+  min-height: 80vh;
+}
+
+.ant-tabs-tab:hover{
+  color: #ff6b00 !important;
+}
+
+.ant-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn{
+  color: #ff6b00;
+}
+
+.ant-tabs .ant-tabs-ink-bar{
+  background-color: #ff6b00 !important;
+}
+
+.ant-drawer-body .particle-account-info{
+  color: white;
+}
+
+.ant-picker-input >input{
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+  border-radius: 0 !important;
+}
+
+textarea {
+  outline: none;
+  padding: 7px 14px;
+  height: 178px;
+  background: #ffffff;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  resize: none;
+}
+
+.join-us-bg {
+  background-image: url("../image/join.png");
+  background-size: cover;
+  background-repeat: no-repeat;
+  width: 100%;
+  height: 50vh;
+}
+
+.slick-slide > div {
+  margin: 0 10px !important;
+}
+
+.slick-list {
+  margin: 0 -10px !important;
+}
+
+.particle-account-info.particle-chain {
+  display: none;
+}
+
+.dropdown .ant-btn {
+  width: 151px;
+  height: 40px;
+  border: 1px solid #d0d5dd;
+  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.dropdown .ant-btn:hover,
+.dropdown .ant-btn:focus {
+  color: #344054 !important;
+  border-color: #d9d9d9 !important;
+}
+
+.donate-btn-container .mint-btn:hover {
+  color: #000 !important;
+  border-color: #ff6b00 !important;
+}
+
+.ant-spin .ant-spin-dot-item{
+background-color: #ff6b00;
+}
+
+.show-more .mint-btn:hover {
+  color: #000 !important;
+  border-color: #458e52 !important;
+}
+
+.donation-goals-con {
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 0.3125rem 1rem -0.1875rem rgba(0, 0, 0, 0.2);
+  padding-bottom: 1.5rem;
+  position: -webkit-sticky;
+  position: sticky;
+  top: 1rem;
+  padding: 20px;
+}
+
+.ant-input:hover,
+.ant-input:focus {
+  border-color: #d0d5dd !important;
+  box-shadow: none;
+}
+
