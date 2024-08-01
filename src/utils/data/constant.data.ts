@@ -1,9 +1,9 @@
 import crowdFundABI from "../CrowdFund.json";
-import giveChainTokenABI from "../GiveChainToken.json";
+import crowdFundTokenABI from "../CrowdFundToken.json";
 
 export const crowdFundContractAddress =
-  "0xa95735fA11707298417e92D5963a6E3faF1c32c7";
-export const giveChainTokenContractAddress =
-  "0x1A99D6C14c0fF2A0B5A6a3c1244862E2cDa45eC5";
+  "0x05924C2C2e39Ec4Cff55b6Ff64C81A19cB84eDf3";
+export const crowdFundTokenContractAddress =
+  "0x2aF480B4ceDb5550EeeB5F303D5aD5caAF570C20";
 
-export { crowdFundABI, giveChainTokenABI };
+export { crowdFundABI, crowdFundTokenABI };

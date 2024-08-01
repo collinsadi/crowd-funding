@@ -1,5 +1,6 @@
-"use client"
+"use client";
 
+import ConnectButton from "@/components/common/connect-button";
 import { navlinks } from "@/utils/data";
 import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
 import { Drawer } from "antd";
@@ -7,10 +8,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-
 const Navbar = () => {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   const showDrawer = () => {
     setOpen(true);
@@ -20,16 +20,14 @@ const Navbar = () => {
     setOpen(false);
   };
 
-
-
   return (
     <nav
       className={`font-space ${
         pathname === "/"
           ? "bg-[#190E0A]"
           : pathname.includes("/campaign")
-          ? "bg-[#FCFCFC]"
-          : "bg-[#F5F5F5]"
+            ? "bg-[#FCFCFC]"
+            : "bg-[#F5F5F5]"
       }`}
     >
       <div className="layout-container flex h-12 items-center justify-between md:h-20">
@@ -47,7 +45,7 @@ const Navbar = () => {
               <li key={`navlinks-${index}`}>
                 <Link
                   href={item.to}
-                  className={`text-base font-normal capitalize  ${
+                  className={`text-base font-normal capitalize ${
                     pathname === "/" ? "text-white" : "text-black"
                   }`}
                 >
@@ -56,25 +54,30 @@ const Navbar = () => {
               </li>
             ))}
           </ul>
-          {/* <ConnectButton /> */}
-
+          <ConnectButton />
         </div>
         <MenuOutlined
           onClick={showDrawer}
           className="!text-white lg:!hidden"
-        //   style={{color:"white"}}
+          //   style={{color:"white"}}
         />
       </div>
       {/* ------------------  mobile side bar -----------------------  */}
       <Drawer
         placement="left"
         {...{ onClose, open }}
-        headerStyle={{ background: "#0E0916" }}
-        bodyStyle={{ background: "#0E0916" }}
+        styles={{
+          header: {
+            background: "#0E0916",
+          },
+          body: {
+            background: "#0E0916",
+          },
+        }}
         closable={false}
         title={
           <div className="flex justify-end">
-            <CloseOutlined onClick={onClose} className=" text-white" />
+            <CloseOutlined onClick={onClose} className="text-white" />
           </div>
         }
       >
@@ -85,7 +88,7 @@ const Navbar = () => {
             </li>
           ))}
         </ul>
-        {/* <ConnectButton /> */}
+        <ConnectButton />
       </Drawer>
     </nav>
   );
