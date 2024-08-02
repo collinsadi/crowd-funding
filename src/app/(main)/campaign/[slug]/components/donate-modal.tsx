@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
+"use client"
+
 import {
   crowdFundContractAddress,
   crowdFundTokenABI,
+  crowdFundTokenContract,
   crowdFundTokenContractAddress,
 } from "@/utils/data";
 import { parseToEther } from "@/utils/helper";
@@ -14,7 +17,12 @@ import { Button, Form, Input, Modal } from "antd";
 import numeral from "numeral";
 import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import {
+  useAccount,
+  useReadContracts,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
 
 type Props = {
   showDonateModal: boolean;
@@ -42,10 +50,22 @@ const DonateModel = ({
 }: Props) => {
   // @ts-expect-error unknown error
   let notification;
+  const [donationAmount, setDonationAmount] = useState<number>();
+  const [donationTipAmount, setDonationTipAmount] = useState<number>();
   const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
-  const [allowanceBalance, setAllowanceBalance] = useState<number>();
   const [isDonating, setIsDonating] = useState(false);
-
+  const account = useAccount();
+  const {data}  = useReadContracts({
+    contracts: [
+      {
+        ...crowdFundTokenContract,
+        functionName: "allowance",
+        args: [account, crowdFundTokenContractAddress],
+      }
+    ],
+  });
+  const [allowance] = data || [];
+  console.log("allowance", allowance);
   const [form] = Form.useForm();
 
   const {
@@ -77,25 +97,28 @@ const DonateModel = ({
     }
   };
 
-  const { isLoading: isApproveConfirming, isSuccess: isApproveConfirmed, error: approveError } =
-    useWaitForTransactionReceipt({
-      hash: approveHash,
-    });
+  const {
+    isLoading: isApproveConfirming,
+    isSuccess: isApproveConfirmed,
+    error: approveError,
+  } = useWaitForTransactionReceipt({
+    hash: approveHash,
+  });
 
-    useEffect(() => {
-      if (isApproveConfirmed) {
-          // @ts-expect-error unknown error
-          toast.dismiss(notification);
-          toast.success("Token approval was a success");
-      }
+  useEffect(() => {
+    if (isApproveConfirmed) {
+      // @ts-expect-error unknown error
+      toast.dismiss(notification);
+      toast.success("Token approval was a success");
+    }
 
-      if (approveContractError ?? approveError) {
-          // @ts-expect-error unknown error
-          toast.dismiss(notification);
-          console.log("mintError", approveContractError);
-          console.log("mintContractError", approveError);
-          toast.error("Something went wrong");
-      }
+    if (approveContractError ?? approveError) {
+      // @ts-expect-error unknown error
+      toast.dismiss(notification);
+      console.log("mintError", approveContractError);
+      console.log("mintContractError", approveError);
+      toast.error("Something went wrong");
+    }
   }, [approveContractError, approveError, isApproveConfirmed, notification]);
   return (
     <Modal
@@ -175,7 +198,7 @@ const DonateModel = ({
             </div>
           </div>
         </div>
-        <>
+        {/* <>
           {isCheckingAllowance ? null : (
             <>
               {handleApproval() ? (
@@ -190,26 +213,26 @@ const DonateModel = ({
               ) : null}
             </>
           )}
-        </>
+        </> */}
       </Form>
-      <>
-      {isCheckingAllowance ? (
-        <p className="text-center">Checking for Approval...</p>
-      ) : (
-        <>
-          {!handleApproval() ? (
-            <Button
-              disabled={isApproveConfirming || isApprovePending}
-              loading={isApproveConfirming || isApprovePending}
-              onClick={handleApproveTransaction}
-              className="mt-5 h-[50px] w-full !border-none !bg-[#FF6B00] !text-base !text-white !disabled:bg-gray-500"
-            >
-              Approve
-            </Button>
-          ) : null}
-        </>
-      )}
-    </>
+      {/* <>
+        {isCheckingAllowance ? (
+          <p className="text-center">Checking for Approval...</p>
+        ) : (
+          <>
+            {!handleApproval() ? (
+              <Button
+                disabled={isApproveConfirming || isApprovePending}
+                loading={isApproveConfirming || isApprovePending}
+                onClick={handleApproveTransaction}
+                className="!disabled:bg-gray-500 mt-5 h-[50px] w-full !border-none !bg-[#FF6B00] !text-base !text-white"
+              >
+                Approve
+              </Button>
+            ) : null}
+          </>
+        )}
+      </> */}
     </Modal>
   );
 };

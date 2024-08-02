@@ -6,4 +6,14 @@ export const crowdFundContractAddress =
 export const crowdFundTokenContractAddress =
   "0x2aF480B4ceDb5550EeeB5F303D5aD5caAF570C20";
 
+export const crowdFundContract = {
+  address:crowdFundContractAddress,
+  abi:crowdFundABI
+} as const
+
+export const crowdFundTokenContract = {
+  address:crowdFundTokenContractAddress,
+  abi:crowdFundTokenABI
+} as const
+
 export { crowdFundABI, crowdFundTokenABI };

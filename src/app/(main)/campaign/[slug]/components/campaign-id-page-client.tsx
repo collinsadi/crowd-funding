@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -13,6 +14,7 @@ import { covertToReadableDate, hasCampaignEnded } from "@/utils/helper";
 import { TagOutlined } from "@ant-design/icons";
 import {
   useAccount,
+  useBlockNumber,
   useReadContract,
   useWaitForTransactionReceipt,
   useWriteContract,
@@ -21,20 +23,31 @@ import pic from "@/public/assets/campaign/chains.jpeg";
 import Image from "next/image";
 import { Button } from "antd";
 import toast from "react-hot-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Organisers from "./organisers";
 import Goals from "./goals";
 import { useQueryClient } from "@tanstack/react-query";
+import { IDonors } from "@/utils/interface/contract.interface";
+import DonateModel from "./donate-modal";
 
 type Props = {
   slug: string;
 };
 
 const CampaignIdPageClient = ({ slug }: Props) => {
-  // @ts-expect-error unknown error
   let notification;
-
+  const [showDonateModal, setShowDonateModal] = useState<boolean>(false);
+  const [donors, setDonors] = useState<IDonors[]>([]);
+  const [percent, setPercent] = useState<number>();
+  const queryClient = useQueryClient();
   const { address } = useAccount();
+  const { data: blockNumber } = useBlockNumber({ watch: true });
+  const { queryKey } = useReadContract({
+    abi: crowdFundTokenABI,
+    address: crowdFundTokenContractAddress,
+    functionName: "balanceOf",
+    args: [address],
+  });
   const { data: campaign } = useReadContract({
     abi: crowdFundABI,
     address: crowdFundContractAddress,
@@ -81,6 +94,10 @@ const CampaignIdPageClient = ({ slug }: Props) => {
     }
   }, [isMintConfirmed, mintError, notification]);
 
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey });
+  }, [blockNumber, queryClient, queryKey]);
+
   console.log("data", campaign);
 
   return campaign ? (
@@ -122,15 +139,15 @@ const CampaignIdPageClient = ({ slug }: Props) => {
               {campaign?.[5]?.toLowerCase() === address?.toLowerCase() ? (
                 <Button
                   className="h-[50px] w-[47%] !border-none !bg-[#FF6B00] text-base !text-white"
-                // disabled={!hasCampaignEnded(endAt) && campaign?.claimed}
-                // onClick={handleWithdrawal as VoidFunction}
+                  // disabled={!hasCampaignEnded(endAt) && campaign?.claimed}
+                  // onClick={handleWithdrawal as VoidFunction}
                 >
                   Withdraw
                 </Button>
               ) : (
                 <Button
                   className="!h-[50px] !w-[47%] border-none !bg-[#FF6B00] !text-base !text-white"
-                // onClick={() => setShowDonateModal(true)}
+                  onClick={() => setShowDonateModal(true)}
                 >
                   Donate
                 </Button>
@@ -145,10 +162,7 @@ const CampaignIdPageClient = ({ slug }: Props) => {
                 Mint
               </Button>
             </div>
-            <Organisers
-              fundraiser={campaign?.[5]}
-              location={campaign?.[10]}
-            />
+            <Organisers fundraiser={campaign?.[5]} location={campaign?.[10]} />
             {/* {campaign?.fundraiser.toLowerCase() === account?.toLowerCase() ? (
                 <div className="mt-5 font-bold">
                   <h1>Share Updates about the campaign</h1>
@@ -190,15 +204,15 @@ const CampaignIdPageClient = ({ slug }: Props) => {
         </div>
       </div>
 
-      {/* <DonateModal
+      <DonateModel
           showDonateModal={showDonateModal}
           onComplete={() => setShowDonateModal(!showDonateModal)}
-          fundraiser={campaign?.fundraiser}
-          campaignId={campaignId}
+          fundraiser={campaign?.[5]}
+          campaignId={slug}
           campaign={campaign}
           setDonors={setDonors}
           setPercent={setPercent}
-        /> */}
+        />
     </main>
   ) : null;
 };
