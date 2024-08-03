@@ -23,6 +23,12 @@ const config = {
         port: "",
         pathname: "/ipfs/**",
       },
+      {
+        protocol: "https",
+        hostname: "orange-secret-beaver-393.mypinata.cloud",
+        port: "",
+        pathname: "/ipfs/**",
+      },
     ],
   },
   webpack: (config) => {
