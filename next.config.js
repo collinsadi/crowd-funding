@@ -17,6 +17,12 @@ const config = {
         port: "",
         pathname: "/ipfs/**",
       },
+      {
+        protocol: "https",
+        hostname: "ipfs.filebase.io",
+        port: "",
+        pathname: "/ipfs/**",
+      },
     ],
   },
   webpack: (config) => {

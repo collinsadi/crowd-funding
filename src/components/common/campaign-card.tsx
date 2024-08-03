@@ -15,6 +15,7 @@ type Props = {
 };
 
 const CampaignCard = ({ campaign }: Props) => {
+      // @ts-expect-error unknown error
   const campaignId = formatUnit(campaign.campaignId) * 10 ** 18;
   const { data } = useReadContract({
     abi: crowdFundABI,

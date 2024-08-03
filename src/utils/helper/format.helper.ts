@@ -3,8 +3,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { utils, type BigNumber } from "ethers";
 
-export const formatUnit = (value: BigNumber) =>
-  parseFloat(utils.formatEther(value));
+export const formatUnit = (value: BigNumber) => {
+  if (!value) return
+  return parseFloat(utils.formatEther(value));
+}
 
 export const parseToEther = (value: number) =>
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -18,8 +20,9 @@ export const covertToReadableDate = (value: number) => {
 
 export const currentEpochTime = Math.floor(new Date().getTime() / 1000.0);
 
-export const hasCampaignEnded = (endAt: BigNumber) =>{
-  const _formattedValue =  formatUnit(endAt) * 10 ** 18
-  return currentEpochTime > _formattedValue
+export const hasCampaignEnded = (endAt: BigNumber) => {
+  if (!endAt) return ;
+  const _formattedValue = formatUnit(endAt);
+  if (_formattedValue === undefined) return ;
+  return currentEpochTime > _formattedValue * 10 ** 18;
 }
-
