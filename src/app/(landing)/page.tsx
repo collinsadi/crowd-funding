@@ -66,7 +66,7 @@ const LandingPage = () => {
               tomorrow for all.
             </p>
             <Link href={generalRoutes.createCampaign}>
-              <Button className="mb-6 mt-6 h-[50px] w-[151px] border-none bg-[#FF6B00] text-base text-white lg:mb-0 lg:mt-6">
+              <Button className="mb-6 mt-6 !h-[50px] !w-[151px] !border-none !bg-[#FF6B00] !text-base !text-white lg:mb-0 lg:mt-6">
                 Create campaign
               </Button>
             </Link>
@@ -105,7 +105,7 @@ const LandingPage = () => {
               investing in the future of our community, we can create a brighter
               tomorrow for all.
             </p>
-            <Button className="mb-6 mt-6 h-[50px] w-[151px] border-none bg-[#FF6B00] text-base text-white lg:mb-0 lg:mt-6">
+            <Button className="mb-6 mt-6 !h-[50px] !w-[151px] !border-none !bg-[#FF6B00] !text-base !text-white lg:mb-0 lg:mt-6">
               Contact us
             </Button>
           </div>
@@ -121,7 +121,7 @@ const LandingPage = () => {
               crowdfunding campaign.
             </h1>
 
-            <Button className="mt-6 h-[50px] w-[151px] border-none bg-[#FF6B00] text-base text-white">
+            <Button className="mt-6 !h-[50px] !w-[151px] border-none !bg-[#FF6B00] !text-base !text-white">
               Contact us
             </Button>
           </div>

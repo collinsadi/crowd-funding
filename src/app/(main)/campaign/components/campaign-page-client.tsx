@@ -127,7 +127,7 @@ const CampaignPageClient = () => {
       <div className="layout-container campaigns">
         <div className="flex w-full items-center justify-between py-10">
           <Link href={generalRoutes.createCampaign} className="ml-auto">
-            <Button className="grid-cols mb-6 mt-6 h-[50px] w-[151px] border-none bg-[#FF6B00] text-base text-white lg:mb-0 lg:mt-6">
+            <Button className="grid-cols mb-6 mt-6 !h-[50px] !w-[151px] !border-none !bg-[#FF6B00] !text-base !text-white lg:mb-0 lg:mt-6">
               Create campaign
             </Button>
           </Link>

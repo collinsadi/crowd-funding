@@ -30,7 +30,7 @@ type Props = {
   showDonateModal: boolean;
   onComplete: () => void;
   fundraiser: AddressType;
-  campaignId: number;
+  campaignId: string | number;
 };
 
 const initialFormData = {

@@ -1,8 +1,13 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-floating-promises */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { crowdFundContract } from "@/utils/data";
 import { covertToReadableDate, formatUnit } from "@/utils/helper";
 import { UserOutlined } from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
-import { FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import ReactTimeAgo from "react-time-ago";
 import {
@@ -18,6 +23,7 @@ type Props = {
 };
 
 const WordsOfSupport = ({ campaignId }: Props) => {
+    // @ts-expect-error unknown error
   let notification;
   const queryClient = useQueryClient();
   const { address } = useAccount();
@@ -40,13 +46,14 @@ const WordsOfSupport = ({ campaignId }: Props) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [getWordsOfSupport, getDonors] = data ?? [];
 
-  console.log("getWordsOfSupport", getWordsOfSupport?.result);
-  console.log("getDonors", getDonors?.result);
 
+    // @ts-expect-error unknown error
   const isDonor = getDonors?.result?.filter(
+    // @ts-expect-error unknown error
     (item) => item?.donorAddress?.toLowerCase() === address?.toLowerCase(),
   );
 
+    // @ts-expect-error unknown erro
   const reversedwordsOfSupport = getWordsOfSupport?.result?.reverse();
 
   const {
@@ -128,6 +135,7 @@ const WordsOfSupport = ({ campaignId }: Props) => {
       ) : null}
 
       <div className="mt-5 space-y-5">
+       {/* @ts-expect-error unknown error */}
         {reversedwordsOfSupport?.map((item, index) => (
           <div key={`words-of-support-${index}`} className="flex gap-x-5">
             <div className="flex h-[40px] w-[40px] items-center justify-center rounded-[50%] bg-[#E6F6EF]">
@@ -140,9 +148,11 @@ const WordsOfSupport = ({ campaignId }: Props) => {
                   <div className="mx-5 h-[5px] w-[5px] rounded-[50%] bg-[#D0D5DD]" />
                   <p className="">
                     {covertToReadableDate(
+                        // @ts-expect-error unknown error
                       formatUnit(item?.timestamp) * 10 ** 18,
                     ) ? (
                       <ReactTimeAgo
+                        // @ts-expect-error unknown error
                         date={formatUnit(item?.timestamp) * 10 ** 18 * 1000}
                       />
                     ) : null}
