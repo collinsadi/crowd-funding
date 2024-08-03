@@ -9,7 +9,11 @@ import {
   crowdFundTokenContract,
   crowdFundTokenContractAddress,
 } from "@/utils/data";
-import { covertToReadableDate, formatUnit } from "@/utils/helper";
+import {
+  covertToReadableDate,
+  formatUnit,
+  hasCampaignEnded,
+} from "@/utils/helper";
 import { IDonors, type ICampaigns } from "@/utils/interface/contract.interface";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, Progress } from "antd";
@@ -33,9 +37,8 @@ type Props = {
 
 const Goals = ({ campaign, campaignId }: Props) => {
   // @ts-expect-error unknown error
-  let notification;
+  let notification, withdrawNotification;
   const [showDonateModal, setShowDonateModal] = useState<boolean>(false);
-  const [donors, setDonors] = useState<IDonors[]>([]);
   const queryClient = useQueryClient();
   const { address } = useAccount();
   const { data: blockNumber } = useBlockNumber({ watch: true });
@@ -61,11 +64,19 @@ const Goals = ({ campaign, campaignId }: Props) => {
     ],
   });
   const [balanceOf, getDonors] = data ?? [];
+
   const {
     data: mintHash,
     writeContract: writeMintContract,
     error: mintContractError,
     isPending: isMintPending,
+  } = useWriteContract();
+
+  const {
+    data: withdrawalHash,
+    writeContract: writeWithdrawalContract,
+    error: withdrawalError,
+    isPending: isWithdrawalPending,
   } = useWriteContract();
 
   const handleMint = async () => {
@@ -80,12 +91,29 @@ const Goals = ({ campaign, campaignId }: Props) => {
     }
   };
 
+  const handleWithdrawal = async () => {
+    withdrawNotification = toast.loading("Withdrawing Funds");
+    writeWithdrawalContract({
+      ...crowdFundContract,
+      functionName: "claim",
+      args: [campaignId],
+    });
+  };
+
   const {
     isLoading: isMintConfirming,
     isSuccess: isMintConfirmed,
     error: mintError,
   } = useWaitForTransactionReceipt({
     hash: mintHash,
+  });
+
+  const {
+    isLoading: isWithdrawalConfirming,
+    isSuccess: isWithdrawalConfirmed,
+    error: withdrawalUpdateContractError,
+  } = useWaitForTransactionReceipt({
+    hash: withdrawalHash,
   });
 
   useEffect(() => {
@@ -95,6 +123,20 @@ const Goals = ({ campaign, campaignId }: Props) => {
       toast.success("Minted testnet USDC");
     }
 
+    if (isWithdrawalConfirmed) {
+      // @ts-expect-error unknown error
+      toast.dismiss(withdrawNotification);
+      toast.success("Withdrawal was successfully");
+
+      if (withdrawalError ?? withdrawalUpdateContractError) {
+        // @ts-expect-error unknown error
+        toast.dismiss(withdrawNotification);
+        console.log(withdrawalError);
+        console.log(withdrawalUpdateContractError);
+        toast.error("Something went wrong with the withdrawal");
+      }
+    }
+
     if (mintError ?? mintContractError) {
       // @ts-expect-error unknown error
       toast.dismiss(notification);
@@ -102,7 +144,7 @@ const Goals = ({ campaign, campaignId }: Props) => {
       console.log("mintContractError", mintContractError);
       toast.error("Something went wrong");
     }
-  }, [isMintConfirmed, mintContractError, mintError, notification]);
+  }, [isMintConfirmed, isWithdrawalConfirmed, mintContractError, mintError, notification, withdrawNotification, withdrawalError, withdrawalUpdateContractError]);
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey });
@@ -143,9 +185,14 @@ const Goals = ({ campaign, campaignId }: Props) => {
           {/* @ts-expect-error unknown error */}
           {campaign?.[5]?.toLowerCase() === address?.toLowerCase() ? (
             <Button
-              className="!disabled:cursor-not-allowed !disabled:bg-gray-600 mb-4 h-[50px] w-full border-none !bg-[#FF6B00] !text-base !text-white"
-              //   disabled={!hasCampaignEnded(endAt) && campaign?.claimed}
-              //   onClick={handleWithdrawal}
+              className="!disabled:cursor-not-allowed !disabled:bg-gray-600 mb-4 !h-[50px] w-full border-none !bg-[#FF6B00] !text-base !text-white"
+              disabled={
+                (!hasCampaignEnded(campaign?.[3]) && !campaign?.[8]) ||
+                isWithdrawalConfirming ||
+                isWithdrawalPending
+              }
+              onClick={handleWithdrawal}
+              loading={isWithdrawalConfirming || isWithdrawalPending}
             >
               Withdraw
             </Button>

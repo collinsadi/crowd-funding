@@ -50,7 +50,7 @@ type Props = {
 };
 
 const CampaignIdPageClient = ({ slug }: Props) => {
-  let notification, campaignUpdateNotification;
+  let notification, campaignUpdateNotification, withdrawNotification;
   const [showDonateModal, setShowDonateModal] = useState<boolean>(false);
   const [campaignUpdateText, setCampaignUpdateText] = useState("");
 
@@ -99,6 +99,13 @@ const CampaignIdPageClient = ({ slug }: Props) => {
     isPending: isCampaignUpdatePending,
   } = useWriteContract();
 
+  const {
+    data: withdrawalHash,
+    writeContract: writeWithdrawalContract,
+    error: withdrawalError,
+    isPending: isWithdrawalPending,
+  } = useWriteContract();
+
   const handleMint = async () => {
     notification = toast.loading("Minting testnet USDC");
     writeMintContract({
@@ -123,6 +130,15 @@ const CampaignIdPageClient = ({ slug }: Props) => {
     }
   };
 
+  const handleWithdrawal = async () => {
+    withdrawNotification = toast.loading("Withdrawing Funds");
+    writeWithdrawalContract({
+      ...crowdFundContract,
+      functionName: "claim",
+      args: [slug],
+    });
+  };
+
   const { isLoading: isMintConfirming, isSuccess: isMintConfirmed } =
     useWaitForTransactionReceipt({
       hash: mintHash,
@@ -136,6 +152,14 @@ const CampaignIdPageClient = ({ slug }: Props) => {
     hash: campaignUpdateHash,
   });
 
+  const {
+    isLoading: isWithdrawalConfirming,
+    isSuccess: isWithdrawalConfirmed,
+    error: withdrawalUpdateContractError,
+  } = useWaitForTransactionReceipt({
+    hash: withdrawalHash,
+  });
+
   useEffect(() => {
     if (isMintConfirmed) {
       // @ts-expect-error unknown error
@@ -147,6 +171,12 @@ const CampaignIdPageClient = ({ slug }: Props) => {
       // @ts-expect-error unknown error
       toast.dismiss(campaignUpdateNotification);
       toast.success("Campaign update was created successfully");
+    }
+
+    if (isWithdrawalConfirmed) {
+      // @ts-expect-error unknown error
+      toast.dismiss(withdrawNotification);
+      toast.success("Withdrawal was successfully");
     }
 
     if (mintError) {
@@ -163,14 +193,26 @@ const CampaignIdPageClient = ({ slug }: Props) => {
       console.log(campaignUpdateContractError);
       toast.error("Something went wrong");
     }
+
+    if (withdrawalError ?? withdrawalUpdateContractError) {
+      // @ts-expect-error unknown error
+      toast.dismiss(withdrawNotification);
+      console.log(withdrawalError);
+      console.log(withdrawalUpdateContractError);
+      toast.error("Something went wrong with the withdrawal");
+    }
   }, [
     campaignUpdateContractError,
     campaignUpdateError,
     campaignUpdateNotification,
     isCampaignConfirmed,
     isMintConfirmed,
+    isWithdrawalConfirmed,
     mintError,
     notification,
+    withdrawNotification,
+    withdrawalError,
+    withdrawalUpdateContractError,
   ]);
 
   useEffect(() => {
@@ -218,9 +260,14 @@ const CampaignIdPageClient = ({ slug }: Props) => {
             <div className="donate-btn-container flex w-full items-center justify-between border-b border-[#D0D5DD] pb-10">
               {campaign?.[5]?.toLowerCase() === address?.toLowerCase() ? (
                 <Button
-                  className="h-[50px] w-[47%] !border-none !bg-[#FF6B00] text-base !text-white"
-                  disabled={!hasCampaignEnded(campaign?.[3]) && campaign?.[8]}
-                  // onClick={handleWithdrawal as VoidFunction}
+                  className="!disabled:bg-gray-700 !h-[50px] w-[47%] !border-none !bg-[#FF6B00] text-base !text-white"
+                  disabled={
+                    (!hasCampaignEnded(campaign?.[3]) && !campaign?.[8]) ||
+                    isWithdrawalConfirming ||
+                    isWithdrawalPending
+                  }
+                  onClick={handleWithdrawal}
+                  loading={isWithdrawalConfirming || isWithdrawalPending}
                 >
                   Withdraw
                 </Button>
@@ -244,7 +291,7 @@ const CampaignIdPageClient = ({ slug }: Props) => {
             </div>
             <Organisers fundraiser={campaign?.[5]} location={campaign?.[10]} />
             <>
-              {!hasCampaignEnded(campaign?.[3]) && campaign?.[8] ? (
+              {!hasCampaignEnded(campaign?.[3]) && !campaign?.[8] ? (
                 <>
                   {campaign?.[5].toLowerCase() === address?.toLowerCase() ? (
                     <div className="mt-5 font-bold">
