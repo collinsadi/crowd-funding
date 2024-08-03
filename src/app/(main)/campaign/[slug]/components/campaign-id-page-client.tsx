@@ -40,6 +40,7 @@ import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
 import ru from "javascript-time-ago/locale/ru";
 import ReactTimeAgo from "react-time-ago";
+import WordsOfSupport from "./words-of-support";
 
 TimeAgo.addDefaultLocale(en);
 TimeAgo.addLocale(ru);
@@ -76,8 +77,8 @@ const CampaignIdPageClient = ({ slug }: Props) => {
       },
     ],
   });
-  const [balanceOf, campaigns, getCampaignUpdate] = data ?? []
-  console.log("getCampaignUpdate", getCampaignUpdate?.result)
+  const [balanceOf, campaigns, getCampaignUpdate] = data ?? [];
+  console.log("getCampaignUpdate", getCampaignUpdate?.result);
   const { data: campaign } = useReadContract({
     ...crowdFundContract,
     functionName: "campaigns",
@@ -110,27 +111,30 @@ const CampaignIdPageClient = ({ slug }: Props) => {
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    campaignUpdateNotification = toast.loading("Updating...")
+    e.preventDefault();
+    campaignUpdateNotification = toast.loading("Updating...");
     writeCampaignUpdateContract({
       ...crowdFundContract,
       functionName: "createCampaignUpdate",
-      args: [slug, campaignUpdateText]
+      args: [slug, campaignUpdateText],
     });
     if (campaignUpdateHash) {
       toast.dismiss(campaignUpdateNotification);
     }
-  }
+  };
 
   const { isLoading: isMintConfirming, isSuccess: isMintConfirmed } =
     useWaitForTransactionReceipt({
       hash: mintHash,
     });
 
-  const { isLoading: isCampaignConfirming, isSuccess: isCampaignConfirmed, error: campaignUpdateContractError } =
-    useWaitForTransactionReceipt({
-      hash: campaignUpdateHash,
-    });
+  const {
+    isLoading: isCampaignConfirming,
+    isSuccess: isCampaignConfirmed,
+    error: campaignUpdateContractError,
+  } = useWaitForTransactionReceipt({
+    hash: campaignUpdateHash,
+  });
 
   useEffect(() => {
     if (isMintConfirmed) {
@@ -143,7 +147,6 @@ const CampaignIdPageClient = ({ slug }: Props) => {
       // @ts-expect-error unknown error
       toast.dismiss(campaignUpdateNotification);
       toast.success("Campaign update was created successfully");
-
     }
 
     if (mintError) {
@@ -160,7 +163,15 @@ const CampaignIdPageClient = ({ slug }: Props) => {
       console.log(campaignUpdateContractError);
       toast.error("Something went wrong");
     }
-  }, [campaignUpdateContractError, campaignUpdateError, campaignUpdateNotification, isCampaignConfirmed, isMintConfirmed, mintError, notification]);
+  }, [
+    campaignUpdateContractError,
+    campaignUpdateError,
+    campaignUpdateNotification,
+    isCampaignConfirmed,
+    isMintConfirmed,
+    mintError,
+    notification,
+  ]);
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey });
@@ -209,7 +220,7 @@ const CampaignIdPageClient = ({ slug }: Props) => {
                 <Button
                   className="h-[50px] w-[47%] !border-none !bg-[#FF6B00] text-base !text-white"
                   disabled={!hasCampaignEnded(campaign?.[3]) && campaign?.[8]}
-                // onClick={handleWithdrawal as VoidFunction}
+                  // onClick={handleWithdrawal as VoidFunction}
                 >
                   Withdraw
                 </Button>
@@ -233,31 +244,35 @@ const CampaignIdPageClient = ({ slug }: Props) => {
             </div>
             <Organisers fundraiser={campaign?.[5]} location={campaign?.[10]} />
             <>
-              {!hasCampaignEnded(campaign?.[3]) && campaign?.[8] ? <>
-                {campaign?.[5].toLowerCase() === address?.toLowerCase() ? (
-                  <div className="mt-5 font-bold">
-                    <h1>Share Updates about the campaign</h1>
-                    <form
-                      onSubmit={handleSubmit}
-                      className="mt-5">
-                      <textarea
-                        name="campaignUpdate"
-                        placeholder="Share Updates about the campaign"
-                        required
-                        className="mt-4 w-full"
-                        onChange={(e) => setCampaignUpdateText(e.target.value)}
-                      />
-                      <button
-                        type="submit"
-                        disabled={isCampaignUpdatePending || isCampaignConfirming}
-                        className="mt-5 h-[50px] w-full border-none !bg-[#FF6B00] !text-base !text-white"
-                      >
-                        Submit
-                      </button>
-                    </form>
-                  </div>
-                ) : null}
-              </> : null}
+              {!hasCampaignEnded(campaign?.[3]) && campaign?.[8] ? (
+                <>
+                  {campaign?.[5].toLowerCase() === address?.toLowerCase() ? (
+                    <div className="mt-5 font-bold">
+                      <h1>Share Updates about the campaign</h1>
+                      <form onSubmit={handleSubmit} className="mt-5">
+                        <textarea
+                          name="campaignUpdate"
+                          placeholder="Share Updates about the campaign"
+                          required
+                          className="mt-4 w-full"
+                          onChange={(e) =>
+                            setCampaignUpdateText(e.target.value)
+                          }
+                        />
+                        <button
+                          type="submit"
+                          disabled={
+                            isCampaignUpdatePending || isCampaignConfirming
+                          }
+                          className="mt-5 h-[50px] w-full border-none !bg-[#FF6B00] !text-base !text-white"
+                        >
+                          Submit
+                        </button>
+                      </form>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
             </>
 
             {/* getCampaignUpdate?.result */}
@@ -272,7 +287,7 @@ const CampaignIdPageClient = ({ slug }: Props) => {
                       <div className="mb-3 flex items-center gap-x-2">
                         <p className="font-bold">
                           {covertToReadableDate(
-                            formatUnit(item?.timestamp) * 10 ** 18
+                            formatUnit(item?.timestamp) * 10 ** 18,
                           ) ? (
                             <ReactTimeAgo
                               date={
@@ -289,7 +304,7 @@ const CampaignIdPageClient = ({ slug }: Props) => {
                 </div>
               </div>
             ) : null}
-
+            <WordsOfSupport campaignId={slug} />
           </div>
           <div className="donation-goals-con hidden md:block md:w-[35%]">
             <Goals campaignId={slug} {...{ campaign }} />

@@ -178,7 +178,7 @@ const DonateModel = ({
     if (donateError ?? donateContractError) {
       // @ts-expect-error unknown error
       toast.dismiss(donateNotification);
-      toast.success("Donation was successful");
+      toast.error("Something went wrong");
     }
   }, [
     approveContractError,
