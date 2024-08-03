@@ -5,13 +5,14 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { crowdFundTokenABI, crowdFundTokenContractAddress } from "@/utils/data";
 import { formatUnit } from "@/utils/helper";
-import { type ICampaigns } from "@/utils/interface/contract.interface";
+import { IDonors, type ICampaigns } from "@/utils/interface/contract.interface";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "antd";
+import { Button, Progress } from "antd";
 import numeral from "numeral";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { useAccount, useBlockNumber, useReadContract, useReadContracts, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, useBlockNumber, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import DonateModel from "./donate-modal";
 
 type Props = {
     campaign: ICampaigns | undefined;
@@ -19,9 +20,11 @@ type Props = {
 }
 
 const Goals = ({ campaign, campaignId }: Props) => {
-    const queryClient = useQueryClient()
     // @ts-expect-error unknown error
     let notification;
+    const [showDonateModal, setShowDonateModal] = useState<boolean>(false);
+    const [donors, setDonors] = useState<IDonors[]>([]);
+    const queryClient = useQueryClient()
     const { address } = useAccount();
     const { data: blockNumber } = useBlockNumber({ watch: true })
     const { data: tokenBalance, queryKey } = useReadContract({
@@ -37,16 +40,6 @@ const Goals = ({ campaign, campaignId }: Props) => {
         isPending: isMintPending,
     } = useWriteContract();
 
-    const { data, error, isPending } = useReadContracts({
-        contracts: [{
-            abi: crowdFundTokenABI,
-            address: crowdFundTokenContractAddress,
-            functionName: "allowance",
-            args: [address, crowdFundTokenContractAddress]
-        }]
-    })
-    const [allowance] = data || []
-    console.log("allowance",allowance)
     const handleMint = async () => {
         notification = toast.loading("Minting testnet USDC");
         writeMintContract({
@@ -84,19 +77,23 @@ const Goals = ({ campaign, campaignId }: Props) => {
         queryClient.invalidateQueries({ queryKey })
     }, [blockNumber, queryClient, queryKey])
 
+    const percentValue = useMemo(() => {
+        return Math.round((formatUnit(campaign?.[7]) / (formatUnit(campaign?.[6]) * 10 ** 18)) * 100);
+    }, [campaign]);
+
     return campaign ? (
         <div className="donation-goals">
             <div className="hidden md:block">
                 <div className="mb-4">
                     <p className="mb-2 text-[14px]">
                         <span className="text-xl font-semibold md:text-2xl">
-                            {numeral(formatUnit(campaign?.[7]) * 10 ** 18)?.format(",")}
+                            {numeral(formatUnit(campaign?.[7]))?.format(",")}
                         </span>{" "}
                         USDC raised of{" "}
                         {numeral(formatUnit(campaign?.[6]) * 10 ** 18)?.format(",")} USDC
                         goal
                     </p>
-                    {/* <Progress percent={percent} showInfo={false} strokeColor="#51AA5D" /> */}
+                    <Progress percent={percentValue} showInfo={false} strokeColor="#51AA5D" />
                     {/* <p className="text-[14px]">{donors.length} donations</p> */}
                     {/* @ts-expect-error unknown error */}
                     <p>Your USDC balance: {numeral(formatUnit(tokenBalance))?.format(",")}</p>
@@ -114,7 +111,7 @@ const Goals = ({ campaign, campaignId }: Props) => {
                     ) : (
                         <Button
                             className="mb-4 !h-[50px] w-full !border-none !bg-[#FF6B00] !text-base !text-white"
-                        //   onClick={() => setShowDonateModal(true)}
+                            onClick={() => setShowDonateModal(true)}
                         >
                             Donate
                         </Button>
@@ -154,15 +151,14 @@ const Goals = ({ campaign, campaignId }: Props) => {
         </div> */}
             </div>
 
-            {/* <DonateModal
-        showDonateModal={showDonateModal}
-        onComplete={() => setShowDonateModal(!showDonateModal)}
-        fundraiser={campaign.fundraiser}
-        campaignId={campaignId}
-        setDonors={setDonors}
-        campaign={campaign}
-        setPercent={setPercent}
-      /> */}
+            <DonateModel
+                showDonateModal={showDonateModal}
+                onComplete={() => setShowDonateModal(!showDonateModal)}
+                fundraiser={campaign?.[5]}
+                campaignId={campaignId}
+                campaign={campaign}
+                setDonors={setDonors}
+            />
         </div>
     ) : null;
 }

@@ -1,24 +1,26 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-"use client"
+"use client";
 
 import {
+  crowdFundContract,
   crowdFundContractAddress,
   crowdFundTokenABI,
   crowdFundTokenContract,
   crowdFundTokenContractAddress,
 } from "@/utils/data";
-import { parseToEther } from "@/utils/helper";
+import { formatUnit, parseToEther } from "@/utils/helper";
 import {
   type AddressType,
-  type ICampaigns,
-  type IDonors,
 } from "@/utils/interface/contract.interface";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, Form, Input, Modal } from "antd";
 import numeral from "numeral";
-import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
+import {  useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
   useAccount,
+  useBlockNumber,
   useReadContracts,
   useWaitForTransactionReceipt,
   useWriteContract,
@@ -29,9 +31,6 @@ type Props = {
   onComplete: () => void;
   fundraiser: AddressType;
   campaignId: number;
-  setDonors: Dispatch<SetStateAction<IDonors[]>>;
-  setPercent: Dispatch<SetStateAction<number | undefined>>;
-  campaign: ICampaigns | undefined;
 };
 
 const initialFormData = {
@@ -44,28 +43,46 @@ const DonateModel = ({
   onComplete,
   fundraiser,
   campaignId,
-  setDonors,
-  campaign,
-  setPercent,
 }: Props) => {
   // @ts-expect-error unknown error
-  let notification;
-  const [donationAmount, setDonationAmount] = useState<number>();
-  const [donationTipAmount, setDonationTipAmount] = useState<number>();
-  const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
-  const [isDonating, setIsDonating] = useState(false);
-  const account = useAccount();
-  const {data}  = useReadContracts({
+  let notification, donateNotification;
+  const queryClient = useQueryClient();
+  const [donationAmount, setDonationAmount] = useState<number | undefined>();
+  const [donationTipAmount, setDonationTipAmount] = useState<number | undefined>();
+  const { address } = useAccount();
+  const { data: blockNumber } = useBlockNumber({ watch: true });
+  const { data, isPending, queryKey } = useReadContracts({
     contracts: [
       {
         ...crowdFundTokenContract,
         functionName: "allowance",
-        args: [account, crowdFundTokenContractAddress],
+        args: [address, crowdFundContractAddress],
+      },
+      {
+        ...crowdFundContract,
+        functionName: "campaigns",
+        args: [campaignId],
       }
     ],
   });
-  const [allowance] = data || [];
-  console.log("allowance", allowance);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [allowance,campaigns] = data ?? [];
+
+  const handleApproval = () => {
+    // @ts-expect-error unknown error
+    if (formatUnit(allowance?.result) && donationAmount && donationTipAmount) {
+      if (
+           // @ts-expect-error unknown error
+        formatUnit(allowance?.result) >=
+        +donationAmount + +donationTipAmount
+      ) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  };
+
   const [form] = Form.useForm();
 
   const {
@@ -73,6 +90,13 @@ const DonateModel = ({
     writeContract: writeApproveContract,
     error: approveContractError,
     isPending: isApprovePending,
+  } = useWriteContract();
+
+  const {
+    data: donateHash,
+    writeContract: writeDonateContract,
+    error: donateContractError,
+    isPending: isDonatePending,
   } = useWriteContract();
 
   const handleApproveTransaction = async () => {
@@ -105,11 +129,41 @@ const DonateModel = ({
     hash: approveHash,
   });
 
+  const handleDonate = () => {
+    donateNotification = toast.loading("Donating.(Don't leave this page)");
+    writeDonateContract({
+      ...crowdFundContract,
+      functionName: "fundCampaign",
+      args: [
+        campaignId,
+        parseToEther(donationAmount!),
+        parseToEther(donationTipAmount!),
+      ],
+    });
+
+    if (donateHash) {
+      toast.dismiss(donateNotification);
+    }
+  };
+
+  const {
+    isLoading: isDonateConfirming,
+    isSuccess: isDonateConfirmed,
+    error: donateError,
+  } = useWaitForTransactionReceipt({
+    hash: donateHash,
+  });
+
   useEffect(() => {
     if (isApproveConfirmed) {
       // @ts-expect-error unknown error
       toast.dismiss(notification);
-      toast.success("Token approval was a success");
+      toast.success("Approval was successful");
+    }
+    if (isDonateConfirmed) {
+      // @ts-expect-error unknown error
+      toast.dismiss(donateNotification);
+      toast.success("Donation was successful");
     }
 
     if (approveContractError ?? approveError) {
@@ -119,7 +173,26 @@ const DonateModel = ({
       console.log("mintContractError", approveError);
       toast.error("Something went wrong");
     }
-  }, [approveContractError, approveError, isApproveConfirmed, notification]);
+
+    if (donateError ?? donateContractError) {
+      // @ts-expect-error unknown error
+      toast.dismiss(donateNotification);
+      toast.success("Donation was successful");
+    }
+  }, [
+    approveContractError,
+    approveError,
+    donateContractError,
+    donateError,
+    donateNotification,
+    isApproveConfirmed,
+    isDonateConfirmed,
+    notification,
+  ]);
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey });
+  }, [blockNumber, queryClient, queryKey]);
   return (
     <Modal
       title={`Donation for ${fundraiser}`}
@@ -198,14 +271,14 @@ const DonateModel = ({
             </div>
           </div>
         </div>
-        {/* <>
-          {isCheckingAllowance ? null : (
+        <>
+          {isPending ? null : (
             <>
               {handleApproval() ? (
                 <Button
                   onClick={handleDonate}
-                  loading={isDonating}
-                  disabled={isDonating}
+                  disabled={isDonateConfirming || isDonatePending}
+                  loading={isDonateConfirming || isDonatePending}
                   className="mt-5 !h-[50px] w-full border-none !bg-[#FF6B00] !text-base !text-white"
                 >
                   Donate
@@ -213,10 +286,10 @@ const DonateModel = ({
               ) : null}
             </>
           )}
-        </> */}
+        </>
       </Form>
-      {/* <>
-        {isCheckingAllowance ? (
+      <>
+        {isPending ? (
           <p className="text-center">Checking for Approval...</p>
         ) : (
           <>
@@ -232,7 +305,7 @@ const DonateModel = ({
             ) : null}
           </>
         )}
-      </> */}
+      </>
     </Modal>
   );
 };

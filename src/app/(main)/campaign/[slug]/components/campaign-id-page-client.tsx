@@ -6,6 +6,7 @@
 
 import {
   crowdFundABI,
+  crowdFundContract,
   crowdFundContractAddress,
   crowdFundTokenABI,
   crowdFundTokenContractAddress,
@@ -49,8 +50,7 @@ const CampaignIdPageClient = ({ slug }: Props) => {
     args: [address],
   });
   const { data: campaign } = useReadContract({
-    abi: crowdFundABI,
-    address: crowdFundContractAddress,
+    ...crowdFundContract,
     functionName: "campaigns",
     args: [slug],
   });
@@ -139,8 +139,8 @@ const CampaignIdPageClient = ({ slug }: Props) => {
               {campaign?.[5]?.toLowerCase() === address?.toLowerCase() ? (
                 <Button
                   className="h-[50px] w-[47%] !border-none !bg-[#FF6B00] text-base !text-white"
-                  // disabled={!hasCampaignEnded(endAt) && campaign?.claimed}
-                  // onClick={handleWithdrawal as VoidFunction}
+                // disabled={!hasCampaignEnded(endAt) && campaign?.claimed}
+                // onClick={handleWithdrawal as VoidFunction}
                 >
                   Withdraw
                 </Button>
@@ -205,14 +205,14 @@ const CampaignIdPageClient = ({ slug }: Props) => {
       </div>
 
       <DonateModel
-          showDonateModal={showDonateModal}
-          onComplete={() => setShowDonateModal(!showDonateModal)}
-          fundraiser={campaign?.[5]}
-          campaignId={slug}
-          campaign={campaign}
-          setDonors={setDonors}
-          setPercent={setPercent}
-        />
+        showDonateModal={showDonateModal}
+        onComplete={() => setShowDonateModal(!showDonateModal)}
+        fundraiser={campaign?.[5]}
+        campaignId={slug}
+        campaign={campaign}
+        setDonors={setDonors}
+        setPercent={setPercent}
+      />
     </main>
   ) : null;
 };
