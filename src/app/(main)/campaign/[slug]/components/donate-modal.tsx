@@ -66,7 +66,8 @@ const DonateModel = ({
     ],
   });
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [allowance,campaigns] = data ?? [];
+  const [allowance,
+  ] = data ?? [];
 
   const handleApproval = () => {
     // @ts-expect-error unknown error

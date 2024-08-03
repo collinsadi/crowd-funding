@@ -8,6 +8,7 @@ import { cookieToInitialState } from "wagmi";
 import { headers } from "next/headers";
 import { config } from "@/config";
 
+
 export const metadata: Metadata = {
   title: {
     default: "Crowd Fund",

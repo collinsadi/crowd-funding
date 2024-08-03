@@ -3,16 +3,17 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { crowdFundTokenABI, crowdFundTokenContractAddress } from "@/utils/data";
-import { formatUnit } from "@/utils/helper";
+import { crowdFundContract, crowdFundTokenABI, crowdFundTokenContract, crowdFundTokenContractAddress } from "@/utils/data";
+import { covertToReadableDate, formatUnit } from "@/utils/helper";
 import { IDonors, type ICampaigns } from "@/utils/interface/contract.interface";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, Progress } from "antd";
 import numeral from "numeral";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { useAccount, useBlockNumber, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, useBlockNumber, useReadContracts, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import DonateModel from "./donate-modal";
+import ReactTimeAgo from 'react-time-ago'
 
 type Props = {
     campaign: ICampaigns | undefined;
@@ -27,12 +28,30 @@ const Goals = ({ campaign, campaignId }: Props) => {
     const queryClient = useQueryClient()
     const { address } = useAccount();
     const { data: blockNumber } = useBlockNumber({ watch: true })
-    const { data: tokenBalance, queryKey } = useReadContract({
-        abi: crowdFundTokenABI,
-        address: crowdFundTokenContractAddress,
-        functionName: "balanceOf",
-        args: [address],
-    });
+    // const { data: tokenBalance, queryKey } = useReadContract({
+    //     abi: crowdFundTokenABI,
+    //     address: crowdFundTokenContractAddress,
+    //     functionName: "balanceOf",
+    //     args: [address],
+    // });
+
+    const { data,queryKey } = useReadContracts({
+        contracts: [
+          {
+            ...crowdFundTokenContract,
+            functionName: "balanceOf",
+            args: [address],
+          },
+          {
+            ...crowdFundContract,
+            functionName: "getDonors",
+            args: [campaignId],
+          }
+        ],
+      });
+      const [balanceOf,getDonors
+      ] = data ?? [];
+      console.log("getDonors",getDonors?.result)
     const {
         data: mintHash,
         writeContract: writeMintContract,
@@ -94,9 +113,9 @@ const Goals = ({ campaign, campaignId }: Props) => {
                         goal
                     </p>
                     <Progress percent={percentValue} showInfo={false} strokeColor="#51AA5D" />
-                    {/* <p className="text-[14px]">{donors.length} donations</p> */}
+                    <p className="text-[14px]">{getDonors?.result?.length} donations</p>
                     {/* @ts-expect-error unknown error */}
-                    <p>Your USDC balance: {numeral(formatUnit(tokenBalance))?.format(",")}</p>
+                    <p>Your USDC balance: {numeral(formatUnit(balanceOf?.result))?.format(",")}</p>
                 </div>
                 <div className="donate-btn-container border-b border-gray-500 pb-5">
                     {/* @ts-expect-error unknown error */}
@@ -123,12 +142,12 @@ const Goals = ({ campaign, campaignId }: Props) => {
                         onClick={handleMint}
                         className="mint-btn !h-[50px] w-full !border-2 !border-[#FF6B00] !text-base !text-[black]"
                     >
-                        Mint
+                        Get USDC
                     </Button>
                 </div>
 
-                {/* <div className="h-[300px] space-y-4 overflow-y-auto pt-5">
-          {donors?.map((item, index) => (
+                <div className="h-[300px] space-y-4 overflow-y-auto pt-5">
+          {getDonors?.result?.map((item, index) => (
             <div key={`donors-${index}`}>
               <p className="">{item?.donorAddress}</p>
               <div className="flex items-center">
@@ -148,7 +167,7 @@ const Goals = ({ campaign, campaignId }: Props) => {
               </div>
             </div>
           ))}
-        </div> */}
+        </div>
             </div>
 
             <DonateModel
@@ -156,8 +175,6 @@ const Goals = ({ campaign, campaignId }: Props) => {
                 onComplete={() => setShowDonateModal(!showDonateModal)}
                 fundraiser={campaign?.[5]}
                 campaignId={campaignId}
-                campaign={campaign}
-                setDonors={setDonors}
             />
         </div>
     ) : null;

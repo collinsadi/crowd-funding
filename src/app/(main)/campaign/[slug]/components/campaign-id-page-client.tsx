@@ -5,18 +5,22 @@
 "use client";
 
 import {
-  crowdFundABI,
   crowdFundContract,
-  crowdFundContractAddress,
   crowdFundTokenABI,
+  crowdFundTokenContract,
   crowdFundTokenContractAddress,
 } from "@/utils/data";
-import { covertToReadableDate, hasCampaignEnded } from "@/utils/helper";
+import {
+  covertToReadableDate,
+  formatUnit,
+  hasCampaignEnded,
+} from "@/utils/helper";
 import { TagOutlined } from "@ant-design/icons";
 import {
   useAccount,
   useBlockNumber,
   useReadContract,
+  useReadContracts,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
@@ -24,31 +28,56 @@ import pic from "@/public/assets/campaign/chains.jpeg";
 import Image from "next/image";
 import { Button } from "antd";
 import toast from "react-hot-toast";
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import Organisers from "./organisers";
 import Goals from "./goals";
 import { useQueryClient } from "@tanstack/react-query";
 import { IDonors } from "@/utils/interface/contract.interface";
 import DonateModel from "./donate-modal";
 
+import TimeAgo from "javascript-time-ago";
+
+import en from "javascript-time-ago/locale/en";
+import ru from "javascript-time-ago/locale/ru";
+import ReactTimeAgo from "react-time-ago";
+
+TimeAgo.addDefaultLocale(en);
+TimeAgo.addLocale(ru);
+
 type Props = {
   slug: string;
 };
 
 const CampaignIdPageClient = ({ slug }: Props) => {
-  let notification;
+  let notification, campaignUpdateNotification;
   const [showDonateModal, setShowDonateModal] = useState<boolean>(false);
-  const [donors, setDonors] = useState<IDonors[]>([]);
-  const [percent, setPercent] = useState<number>();
+  const [campaignUpdateText, setCampaignUpdateText] = useState("");
+
   const queryClient = useQueryClient();
   const { address } = useAccount();
   const { data: blockNumber } = useBlockNumber({ watch: true });
-  const { queryKey } = useReadContract({
-    abi: crowdFundTokenABI,
-    address: crowdFundTokenContractAddress,
-    functionName: "balanceOf",
-    args: [address],
+  const { data, queryKey } = useReadContracts({
+    contracts: [
+      {
+        abi: crowdFundTokenABI,
+        address: crowdFundTokenContractAddress,
+        functionName: "balanceOf",
+        args: [address],
+      },
+      {
+        ...crowdFundContract,
+        functionName: "campaigns",
+        args: [slug],
+      },
+      {
+        ...crowdFundContract,
+        functionName: "getCampaignUpdate",
+        args: [slug],
+      },
+    ],
   });
+  const [balanceOf, campaigns, getCampaignUpdate] = data ?? []
+  console.log("getCampaignUpdate", getCampaignUpdate?.result)
   const { data: campaign } = useReadContract({
     ...crowdFundContract,
     functionName: "campaigns",
@@ -62,11 +91,17 @@ const CampaignIdPageClient = ({ slug }: Props) => {
     isPending: isMintPending,
   } = useWriteContract();
 
+  const {
+    data: campaignUpdateHash,
+    writeContract: writeCampaignUpdateContract,
+    error: campaignUpdateError,
+    isPending: isCampaignUpdatePending,
+  } = useWriteContract();
+
   const handleMint = async () => {
     notification = toast.loading("Minting testnet USDC");
     writeMintContract({
-      address: crowdFundTokenContractAddress,
-      abi: crowdFundTokenABI,
+      ...crowdFundTokenContract,
       functionName: "mint",
     });
     if (mintHash) {
@@ -74,9 +109,27 @@ const CampaignIdPageClient = ({ slug }: Props) => {
     }
   };
 
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    campaignUpdateNotification = toast.loading("Updating...")
+    writeCampaignUpdateContract({
+      ...crowdFundContract,
+      functionName: "createCampaignUpdate",
+      args: [slug, campaignUpdateText]
+    });
+    if (campaignUpdateHash) {
+      toast.dismiss(campaignUpdateNotification);
+    }
+  }
+
   const { isLoading: isMintConfirming, isSuccess: isMintConfirmed } =
     useWaitForTransactionReceipt({
       hash: mintHash,
+    });
+
+  const { isLoading: isCampaignConfirming, isSuccess: isCampaignConfirmed, error: campaignUpdateContractError } =
+    useWaitForTransactionReceipt({
+      hash: campaignUpdateHash,
     });
 
   useEffect(() => {
@@ -86,13 +139,28 @@ const CampaignIdPageClient = ({ slug }: Props) => {
       toast.success("Campaign was created successfully");
     }
 
+    if (isCampaignConfirmed) {
+      // @ts-expect-error unknown error
+      toast.dismiss(campaignUpdateNotification);
+      toast.success("Campaign update was created successfully");
+
+    }
+
     if (mintError) {
       // @ts-expect-error unknown error
       toast.dismiss(notification);
       console.log(mintError);
       toast.error("Something went wrong");
     }
-  }, [isMintConfirmed, mintError, notification]);
+
+    if (campaignUpdateError ?? campaignUpdateContractError) {
+      // @ts-expect-error unknown error
+      toast.dismiss(campaignUpdateNotification);
+      console.log(campaignUpdateError);
+      console.log(campaignUpdateContractError);
+      toast.error("Something went wrong");
+    }
+  }, [campaignUpdateContractError, campaignUpdateError, campaignUpdateNotification, isCampaignConfirmed, isMintConfirmed, mintError, notification]);
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey });
@@ -118,7 +186,8 @@ const CampaignIdPageClient = ({ slug }: Props) => {
             </div>
             <div className="flex items-center justify-between border-b border-[#D0D5DD] pb-4">
               <p className="text-base font-normal">
-                {/* Created {covertToReadableDate(campaign?.[2])} */}
+                Created{" "}
+                {covertToReadableDate(formatUnit(campaign?.[2]) * 10 ** 18)}
               </p>
               <div className="flex items-center justify-between">
                 <TagOutlined className="mr-2" />
@@ -139,7 +208,7 @@ const CampaignIdPageClient = ({ slug }: Props) => {
               {campaign?.[5]?.toLowerCase() === address?.toLowerCase() ? (
                 <Button
                   className="h-[50px] w-[47%] !border-none !bg-[#FF6B00] text-base !text-white"
-                // disabled={!hasCampaignEnded(endAt) && campaign?.claimed}
+                  disabled={!hasCampaignEnded(campaign?.[3]) && campaign?.[8]}
                 // onClick={handleWithdrawal as VoidFunction}
                 >
                   Withdraw
@@ -159,44 +228,68 @@ const CampaignIdPageClient = ({ slug }: Props) => {
                 disabled={isMintPending || isMintConfirming}
                 className="mint-btn !h-[50px] !w-[47%] !border-2 !border-[#FF6B00] !bg-[#FCFCFC] !text-base !text-[black]"
               >
-                Mint
+                Get USDC
               </Button>
             </div>
             <Organisers fundraiser={campaign?.[5]} location={campaign?.[10]} />
-            {/* {campaign?.fundraiser.toLowerCase() === account?.toLowerCase() ? (
-                <div className="mt-5 font-bold">
-                  <h1>Share Updates about the campaign</h1>
-                  {/* eslint-disable-next-line @typescript-eslint/no-misused-promises */}
-
-            {/* {campaignUpdates.length > 0 ? (
-                <div className="mt-5">
-                  <h1 className="mb-3 text-xl font-bold">
-                    Updates ({campaignUpdates.length})
-                  </h1>
-                  <div className="space-y-5">
-                    {campaignUpdates?.map((item, index) => (
-                      <div key={`campaign-updates-${index}`}>
-                        <div className="mb-3 flex items-center gap-x-2">
-                          <p className="font-bold">
-                            {covertToReadableDate(
-                              formatUnit(item?.timestamp) * 10 ** 18
-                            ) ? (
-                              <ReactTimeAgo
-                                date={
-                                  formatUnit(item?.timestamp) * 10 ** 18 * 1000
-                                }
-                              />
-                            ) : null}{" "}
-                          </p>
-                          <p>by {campaign?.fundraiser}</p>
-                        </div>
-                        <p className="whitespace-pre-wrap">{item?.description}</p>
-                      </div>
-                    ))}
+            <>
+              {!hasCampaignEnded(campaign?.[3]) && campaign?.[8] ? <>
+                {campaign?.[5].toLowerCase() === address?.toLowerCase() ? (
+                  <div className="mt-5 font-bold">
+                    <h1>Share Updates about the campaign</h1>
+                    <form
+                      onSubmit={handleSubmit}
+                      className="mt-5">
+                      <textarea
+                        name="campaignUpdate"
+                        placeholder="Share Updates about the campaign"
+                        required
+                        className="mt-4 w-full"
+                        onChange={(e) => setCampaignUpdateText(e.target.value)}
+                      />
+                      <button
+                        type="submit"
+                        disabled={isCampaignUpdatePending || isCampaignConfirming}
+                        className="mt-5 h-[50px] w-full border-none !bg-[#FF6B00] !text-base !text-white"
+                      >
+                        Submit
+                      </button>
+                    </form>
                   </div>
+                ) : null}
+              </> : null}
+            </>
+
+            {/* getCampaignUpdate?.result */}
+            {getCampaignUpdate?.result?.length > 0 ? (
+              <div className="mt-5">
+                <h1 className="mb-3 text-xl font-bold">
+                  Updates ({getCampaignUpdate?.result?.length})
+                </h1>
+                <div className="space-y-5">
+                  {getCampaignUpdate?.result?.map((item, index) => (
+                    <div key={`campaign-updates-${index}`}>
+                      <div className="mb-3 flex items-center gap-x-2">
+                        <p className="font-bold">
+                          {covertToReadableDate(
+                            formatUnit(item?.timestamp) * 10 ** 18
+                          ) ? (
+                            <ReactTimeAgo
+                              date={
+                                formatUnit(item?.timestamp) * 10 ** 18 * 1000
+                              }
+                            />
+                          ) : null}{" "}
+                        </p>
+                        <p>by {campaign?.[5]}</p>
+                      </div>
+                      <p className="whitespace-pre-wrap">{item?.description}</p>
+                    </div>
+                  ))}
                 </div>
-              ) : null}
-              <WordsOfSupport {...{ campaignId, campaign }} /> */}
+              </div>
+            ) : null}
+
           </div>
           <div className="donation-goals-con hidden md:block md:w-[35%]">
             <Goals campaignId={slug} {...{ campaign }} />
@@ -209,9 +302,6 @@ const CampaignIdPageClient = ({ slug }: Props) => {
         onComplete={() => setShowDonateModal(!showDonateModal)}
         fundraiser={campaign?.[5]}
         campaignId={slug}
-        campaign={campaign}
-        setDonors={setDonors}
-        setPercent={setPercent}
       />
     </main>
   ) : null;
